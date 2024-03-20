@@ -2,6 +2,7 @@ import csv
 from io import StringIO
 import yaml
 import streamlit as st
+import base64
 
 
 def read_database_config(file_path):
@@ -33,3 +34,10 @@ def string_to_filename(s):
     # Remove leading/trailing spaces and double underscores
     filename = filename.strip().replace('__', '_')
     return filename
+
+
+def get_base64(bin_file):
+    # Decode binary files like images
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()

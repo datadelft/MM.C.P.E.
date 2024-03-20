@@ -3,7 +3,8 @@ from database import query_db
 from datetime import datetime
 from filefunctions import export_to_csv
 from filefunctions import string_to_filename
-import base64
+from filefunctions import get_base64
+from database import fetch_first_from_db
 
 def channel_name_dropdown():
 
@@ -32,10 +33,17 @@ def channel_name_dropdown():
         channel_names_from_database[index]  # return the channel ID and name
 
 
-def export_data(chan_id, chan_name):
+def export_data(chan_id, chan_name, from_datetime, to_datetime):
 
-    query = "SELECT UserName, Message FROM Posts INNER JOIN Users " \
-            "ON Posts.UserId = Users.Id WHERE ChannelId = '" + chan_id + "' ORDER BY Posts.CreateAt"
+    print(from_datetime, to_datetime)
+
+    query = "SELECT UserName, Message " \
+            "FROM Posts INNER JOIN Users " \
+            "ON Posts.UserId = Users.Id WHERE (ChannelId = '" + chan_id + "' and " \
+            "Posts.CreateAt >= " + str(from_datetime) + " and " \
+            "Posts.CreateAt <= " + str(to_datetime) + " ) ORDER BY Posts.CreateAt"
+
+    print(query)
 
     # Fetch rows into lists
     posts = []
@@ -48,13 +56,6 @@ def export_data(chan_id, chan_name):
 
     # display results
     st.table(posts)
-
-
-def get_base64(bin_file):
-    # Decode binary files like images
-    with open(bin_file, 'rb') as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
 
 
 def show_background():
@@ -71,3 +72,44 @@ def show_background():
     ''' % bin_str
     # render the background
     st.markdown(page_bg_img, unsafe_allow_html=True)
+
+
+def get_user_timeframe(chan_id):
+
+    # find first post timestamp in selected channel
+    # mattermost uses unix timestamps for the CreateAt field of a post.
+    query = "SELECT MIN(CreateAt) FROM Posts WHERE ChannelId = '" + chan_id + "'"
+    first_post_timedate_in_ms = fetch_first_from_db(query)
+
+    print("Received timestamp in milliseconds" + str(first_post_timedate_in_ms))
+    # determine the first post date available in the database
+    original_from_unix = first_post_timedate_in_ms / 1000  # from timestamp can only process seconds not ms
+    original_from = datetime.fromtimestamp(original_from_unix)
+
+    # Extract date and time components
+    preset_date = original_from.date()
+    preset_time = original_from.time()
+
+    # Create a layout with two columns
+    col1, col2 = st.columns(2)
+
+    # Get 'from' date and time input from the user
+    with col1:
+        from_date = st.date_input("From Date", preset_date)
+    with col2:
+        from_time = st.time_input("From Time", preset_time)
+
+    # Get 'to' date and time input from the user
+    with col1:
+        to_date = st.date_input("To Date")
+    with col2:
+        to_time = st.time_input("To Time")
+
+    # Combine date and time inputs into datetime objects
+    from_datetime = datetime.combine(from_date, from_time)
+    to_datetime = datetime.combine(to_date, to_time)
+
+    unix_from = int(from_datetime.timestamp())
+    unix_to = int(to_datetime.timestamp())
+
+    return unix_from, unix_to
