@@ -3,7 +3,7 @@ from database import query_db
 from datetime import datetime
 from filefunctions import export_to_csv
 from filefunctions import string_to_filename
-
+import base64
 
 def channel_name_dropdown():
 
@@ -48,3 +48,26 @@ def export_data(chan_id, chan_name):
 
     # display results
     st.table(posts)
+
+
+def get_base64(bin_file):
+    # Decode binary files like images
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+
+def show_background():
+    # decode the binary
+    bin_str = get_base64("img/background.jpg")
+    # set the style element
+    page_bg_img = '''
+    <style>
+    .stApp {
+    background-image: url("data:image/png;base64,%s");
+    background-size: cover;
+    }
+    </style>
+    ''' % bin_str
+    # render the background
+    st.markdown(page_bg_img, unsafe_allow_html=True)

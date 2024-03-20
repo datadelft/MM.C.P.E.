@@ -4,6 +4,8 @@ import webfunctions as web
 
 if __name__ == '__main__':
 
+    web.show_background()
+
     st.title("MM.C.P.E.")
     st.write("The streamlit MatterMost Channel Post Exporter ;-)")
 
